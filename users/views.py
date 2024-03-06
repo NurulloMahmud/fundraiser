@@ -1,6 +1,9 @@
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework.views import APIView
 
 from .models import CustomUser
 
@@ -21,6 +24,49 @@ class MyTokenObtainPairView(TokenObtainPairView):
 
 class UserRegisterAPIView(APIView):
     def post(self, request):
-        data = request.data
-        password = data['password']
-        print(password)
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        password_confirm = request.POST.get('password_confirm')
+        mobile = request.POST.get('mobile')
+
+        if CustomUser.objects.filter(email=email).exists():
+            context = {
+                "success": False,
+                "message": "This email already exists"
+            }
+
+            return Response(context, status=status.HTTP_400_BAD_REQUEST)
+
+        if not password == password_confirm:
+            context = {
+                "success": False,
+                "message": "Passwords don't match"
+            }
+
+            return Response(context, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            CustomUser.objects.create_user(
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                password=password,
+                mobile=mobile
+            )
+
+            context = {
+                "success": True,
+                "message": "User has been registered successfully"
+            }
+
+            return Response(context, status=status.HTTP_201_CREATED)
+        except:
+            context = {
+                "success": False,
+                "message": "Missing required fields"
+            }
+
+            return Response(context, status=status.HTTP_400_BAD_REQUEST)
+        
